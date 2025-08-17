@@ -601,8 +601,11 @@ You are an expert GIS data analyst. Your task is to analyze the following summar
 `;
 
               try {
-                const apiKey = "";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                const fixedApiKey = "AIzaSyAiXPFur5FiFdnxD5A8b5Cw2xH1VkppiOA";
+                if (!fixedApiKey) {
+                    throw new Error("مفتاح API غير متوفر.");
+                }
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${fixedApiKey}`;
                 
                 const payload = {
                   contents: [{ role: "user", parts: [{ text: prompt }, {text: `**User's Description:**\n${summary.userDescription || 'لم يقدم المستخدم وصفًا.'}\n\n**Dataset Summary:**\n- **Feature Count:** ${summary.featureCount}\n- **نوع الظاهرات:** ${summary.geometryType}\n\n**Geographic Context:**\n- **Approximate Center:** ${summary.geographicContext.centerLocation}\n- **Spatial Extent:** ${summary.geographicContext.extent}\n\n**Spatial Distribution Summary:**\n${summary.spatialDistribution}\n\n**Statistical Summary of Attributes:**\n${JSON.stringify(summary.statisticalSummary, null, 2)}`}] }]
@@ -631,7 +634,7 @@ You are an expert GIS data analyst. Your task is to analyze the following summar
 
               } catch (err) {
                   console.error(err);
-                  setError(`فشل الاتصال بخدمة الذكاء الاصطناعي. ${err.message}`);
+                  setError(`فشل الاتصال بخدمة الذكاء الاصطناعي: ${err.message}`);
                   setAiResponse('');
               } finally {
                   setIsAiLoading(false);
