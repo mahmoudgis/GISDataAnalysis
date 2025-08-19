@@ -289,73 +289,14 @@
             );
           };
 
-          const SummaryChart = ({ summary }) => {
-            if (!summary || Object.keys(summary).length === 0) return null;
-
-            const generateSVG = () => {
-                const entries = Object.entries(summary);
-                if (entries.length === 0) return '';
-
-                const width = 600;
-                const chartHeight = 250;
-                const barWidth = 40;
-                const groupMargin = 20;
-                const labelAreaHeight = 120;
-                const startX = 50; // Left padding for Y-axis labels
-                const totalWidth = entries.length * (barWidth + groupMargin) + startX;
-
-                let svgContent = `<svg width="100%" viewBox="0 0 ${totalWidth} ${chartHeight + labelAreaHeight}" xmlns="http://www.w3.org/2000/svg">
-                    <style>
-                        .label { font-family: Arial, sans-serif; font-size: 12px; fill: #333; text-anchor: middle; }
-                        .bar-completeness { fill: #3b82f6; }
-                        .axis { stroke: #9ca3af; stroke-width: 1; }
-                        .grid-line { stroke: #e5e7eb; stroke-width: 1; }
-                        .percent-label { font-family: Arial, sans-serif; font-size: 10px; fill: #fff; text-anchor: middle; }
-                    </style>
-                    
-                    <line x1="${startX - 10}" y1="0" x2="${startX - 10}" y2="${chartHeight}" class="axis" />
-                    <line x1="${startX - 10}" y1="${chartHeight}" x2="${totalWidth}" y2="${chartHeight}" class="axis" />
-                `;
-
-                for(let i = 0; i <= 4; i++) {
-                    const y = chartHeight * (1 - i/4);
-                    const value = i * 25;
-                    svgContent += `
-                        <text x="${startX - 15}" y="${y + 4}" text-anchor="end" font-size="10" fill="#6b7280">${value}%</text>
-                        <line x1="${startX - 10}" y1="${y}" x2="${totalWidth}" y2="${y}" class="grid-line" />
-                    `;
-                }
-
-                entries.forEach(([key, value], index) => {
-                    const groupX = index * (barWidth + groupMargin) + startX + (groupMargin / 2);
-                    const barH = (value.completeness / 100) * chartHeight;
-
-                    svgContent += `
-                        <g>
-                            <rect x="${groupX}" y="${chartHeight - barH}" width="${barWidth}" height="${barH}" class="bar-completeness" rx="2" />
-                            <text x="${groupX + barWidth / 2}" y="${chartHeight - barH - 5}" class="label">${value.completeness}%</text>
-                            <text x="${groupX + barWidth / 2}" y="${chartHeight + 20}" transform="rotate(65, ${groupX + barWidth / 2}, ${chartHeight + 20})" class="label">${key}</text>
-                        </g>
-                    `;
-                });
-                svgContent += `</svg>`;
-                return svgContent;
-            };
-
-            return (
-                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 animate-fade-in">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4">ملخص اكتمال المتغيرات</h2>
-                    <div dangerouslySetInnerHTML={{ __html: generateSVG() }} />
-                </div>
-            );
-          };
-
           // Load external libraries and styles on component mount
           React.useEffect(() => {
             Promise.all([
               loadScript('https://unpkg.com/shpjs@latest/dist/shp.js'),
               loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'),
               loadScript('https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.js'),
+              loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
+              loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js')
             ]).then(() => {
               console.log("All libraries loaded successfully.");
               setScriptsLoaded(true);
@@ -662,53 +603,6 @@ You are an expert GIS data analyst. Your task is to analyze the following summar
           const handleExportToWord = () => {
             if (!fileInfo || !aiResponse) return;
 
-            const generateSummaryChartSVG = (summary) => {
-                const entries = Object.entries(summary);
-                if (entries.length === 0) return '';
-
-                const width = 600;
-                const chartHeight = 250;
-                const barWidth = 40;
-                const groupMargin = 20;
-                const labelAreaHeight = 120;
-                const startX = 50;
-                const totalWidth = entries.length * (barWidth + groupMargin) + startX;
-
-                let svgContent = `<svg width="${totalWidth}" height="${chartHeight + labelAreaHeight}" xmlns="http://www.w3.org/2000/svg">
-                    <style>
-                        .label { font-family: Arial, sans-serif; font-size: 12px; fill: #333; text-anchor: middle; }
-                        .bar-completeness { fill: #3b82f6; }
-                        .axis { stroke: #9ca3af; stroke-width: 1; }
-                        .grid-line { stroke: #e5e7eb; stroke-width: 1; }
-                    </style>
-                    <line x1="${startX - 10}" y1="0" x2="${startX - 10}" y2="${chartHeight}" class="axis" />
-                    <line x1="${startX - 10}" y1="${chartHeight}" x2="${totalWidth}" y2="${chartHeight}" class="axis" />
-                `;
-
-                for(let i = 0; i <= 4; i++) {
-                    const y = chartHeight * (1 - i/4);
-                    const value = i * 25;
-                    svgContent += `
-                        <text x="${startX - 15}" y="${y + 4}" text-anchor="end" font-size="10" fill="#6b7280">${value}%</text>
-                        <line x1="${startX - 10}" y1="${y}" x2="${totalWidth}" y2="${y}" class="grid-line" />
-                    `;
-                }
-
-                entries.forEach(([key, value], index) => {
-                    const groupX = index * (barWidth + groupMargin) + startX + (groupMargin / 2);
-                    const barH = (value.completeness / 100) * chartHeight;
-                    svgContent += `
-                        <g>
-                            <rect x="${groupX}" y="${chartHeight - barH}" width="${barWidth}" height="${barH}" class="bar-completeness" rx="2" />
-                            <text x="${groupX + barWidth / 2}" y="${chartHeight - barH - 5}" class="label">${value.completeness}%</text>
-                            <text x="${groupX + barWidth / 2}" y="${chartHeight + 20}" transform="rotate(65, ${groupX + barWidth / 2}, ${chartHeight + 20})" class="label">${key}</text>
-                        </g>
-                    `;
-                });
-                svgContent += `</svg>`;
-                return svgContent;
-            };
-
             const markdownToHtml = (text) => {
                 let html = text
                     .replace(/^## (.*$)/gim, '<h2>$1</h2>')
@@ -752,7 +646,7 @@ You are an expert GIS data analyst. Your task is to analyze the following summar
             if (fileInfo.statisticalSummary && Object.keys(fileInfo.statisticalSummary).length > 0) {
                 reportHtml += `<h2>الملخص الإحصائي للمتغيرات</h2>`;
                  Object.entries(fileInfo.statisticalSummary).forEach(([key, value]) => {
-                    reportHtml += `<h3>${key} <span style="color: #059669;">${value.type}</span></h3>`;
+                    reportHtml += `<h3>${key} <span style="color: #DC2626;">${value.type}</span></h3>`;
                     if (value.type === 'رقمي') {
                         reportHtml += `<ul>
                             <li><strong>العدد:</strong> ${value.count}</li>
@@ -777,13 +671,6 @@ You are an expert GIS data analyst. Your task is to analyze the following summar
                     }
                 });
                 reportHtml += `<br/>`;
-
-                reportHtml += `<h2>ملخص اكتمال المتغيرات</h2>`;
-                const summaryChartSVG = generateSummaryChartSVG(fileInfo.statisticalSummary);
-                if(summaryChartSVG) {
-                    const svgEncoded = btoa(unescape(encodeURIComponent(summaryChartSVG)));
-                    reportHtml += `<p><img src="data:image/svg+xml;base64,${svgEncoded}" alt="Summary Chart" /></p><br/>`;
-                }
             }
 
             reportHtml += `
@@ -798,7 +685,7 @@ You are an expert GIS data analyst. Your task is to analyze the following summar
                     <meta charset="UTF-8">
                     <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom><w:DoNotOptimizeForBrowser/><w:Rtl/></w:WordDocument></xml><![endif]-->
                     <style>
-                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; text-align: right; }
+                        body { font-family: 'Calibri', sans-serif; direction: rtl; text-align: right; }
                         h1 { font-size: 24px; color: #172554; border-bottom: 2px solid #60a5fa; padding-bottom: 5px;}
                         h2 { font-size: 20px; color: #1e3a8a; margin-top: 20px; }
                         h3 { font-size: 16px; color: #1d4ed8; margin-top: 15px; }
@@ -1004,7 +891,6 @@ You are an expert GIS data analyst. Your task is to analyze the following summar
                                     ))}
                                 </div>
                             </div>
-                            <SummaryChart summary={fileInfo.statisticalSummary} />
                         </>
                       )}
                     </>
